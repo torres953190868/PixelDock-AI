@@ -1,0 +1,365 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:host,
+.pixeldock-root,
+.pixeldock-options {
+  color: #f8f5df;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  letter-spacing: 0;
+}
+
+.pd-shell,
+.pixeldock-options {
+  --pd-bg: #17131f;
+  --pd-panel: #241c32;
+  --pd-panel-2: #312640;
+  --pd-text: #f8f5df;
+  --pd-muted: #b7adc9;
+  --pd-border: #f8f5df;
+  --pd-accent: #64f4c4;
+  --pd-warn: #ffd166;
+  --pd-error: #ff6b6b;
+  --pd-ink: #08070b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.pd-shell {
+  position: fixed;
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  width: min(380px, calc(100vw - 24px));
+  max-height: calc(100vh - 16px);
+  background: var(--pd-bg);
+  border: 3px solid var(--pd-border);
+  box-shadow: 8px 8px 0 var(--pd-ink);
+  color: var(--pd-text);
+  overflow: hidden;
+  user-select: none;
+}
+
+.pd-shell * {
+  box-sizing: border-box;
+  letter-spacing: 0;
+}
+
+.pd-collapsed {
+  width: 72px;
+}
+
+.pd-shell:not(.pd-collapsed) {
+  min-width: min(280px, calc(100vw - 16px));
+  min-height: min(180px, calc(100vh - 16px));
+  max-width: calc(100vw - 16px);
+}
+
+.pd-titlebar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px;
+  background: var(--pd-panel-2);
+  border-bottom: 3px solid var(--pd-border);
+  cursor: grab;
+}
+
+.pd-titlebar:active {
+  cursor: grabbing;
+}
+
+.pd-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.pd-pixel-mark {
+  width: 12px;
+  height: 12px;
+  background: var(--pd-accent);
+  box-shadow:
+    4px 0 0 #ff6bcb,
+    0 4px 0 #ffe66d,
+    4px 4px 0 #f8f5df;
+  flex: 0 0 auto;
+}
+
+.pd-main {
+  flex: 1 1 auto;
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    var(--pd-bg);
+  background-size: 8px 8px;
+  user-select: text;
+}
+
+.pd-main::-webkit-scrollbar {
+  width: 10px;
+}
+
+.pd-main::-webkit-scrollbar-track {
+  background: #0f0c16;
+  border-left: 2px solid var(--pd-border);
+}
+
+.pd-main::-webkit-scrollbar-thumb {
+  background: var(--pd-accent);
+  border: 2px solid var(--pd-ink);
+}
+
+.pd-footer {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--pd-panel);
+  border-top: 3px solid var(--pd-border);
+}
+
+.pd-button,
+.pd-tab,
+.pd-icon-button {
+  appearance: none;
+  border: 2px solid var(--pd-border);
+  border-radius: 0;
+  background: var(--pd-panel-2);
+  color: var(--pd-text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  min-height: 34px;
+  padding: 7px 10px;
+  text-align: center;
+  box-shadow: 3px 3px 0 var(--pd-ink);
+}
+
+.pd-icon-button {
+  min-width: 32px;
+  padding: 6px 8px;
+}
+
+.pd-button:hover,
+.pd-tab:hover,
+.pd-icon-button:hover,
+.pd-button-active {
+  background: var(--pd-accent);
+  color: var(--pd-ink);
+}
+
+.pd-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.pd-button-row,
+.pd-platform-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pd-home-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.pd-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.pd-card {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  background: var(--pd-panel);
+  border: 2px solid var(--pd-border);
+}
+
+.pd-label {
+  display: grid;
+  gap: 6px;
+  color: var(--pd-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.pd-input,
+.pd-textarea,
+.pd-select {
+  width: 100%;
+  border: 2px solid var(--pd-border);
+  border-radius: 0;
+  background: #0f0c16;
+  color: var(--pd-text);
+  font: inherit;
+  min-height: 34px;
+  padding: 8px;
+  outline: none;
+}
+
+.pd-textarea {
+  min-height: 104px;
+  resize: vertical;
+}
+
+.pd-input:focus,
+.pd-textarea:focus,
+.pd-select:focus {
+  border-color: var(--pd-accent);
+  box-shadow: 0 0 0 2px var(--pd-accent);
+}
+
+.pd-muted {
+  color: var(--pd-muted);
+}
+
+.pd-error {
+  color: var(--pd-error);
+}
+
+.pd-warning {
+  color: var(--pd-warn);
+}
+
+.pd-result-text {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.pd-link {
+  color: var(--pd-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-word;
+}
+
+.pd-link:hover {
+  color: var(--pd-text);
+}
+
+.pd-vocab-context {
+  display: grid;
+  gap: 4px;
+}
+
+.pd-details-summary {
+  color: var(--pd-muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.pd-details-summary:hover {
+  color: var(--pd-accent);
+}
+
+.pd-source-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pd-source-meta {
+  display: grid;
+  gap: 2px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.pd-source-link {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.pd-meta-label {
+  color: var(--pd-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.pd-favicon {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+}
+
+.pd-term-list,
+.pd-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pd-term-list li,
+.pd-list li {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  background: #120e1a;
+  border: 2px solid #534766;
+}
+
+.pd-split {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+}
+
+.pixeldock-options {
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    #17131f;
+  background-size: 10px 10px;
+  padding: 24px;
+}
+
+.pd-options-shell {
+  display: grid;
+  gap: 16px;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.pd-options-header {
+  display: grid;
+  gap: 4px;
+  padding: 18px;
+  border: 3px solid var(--pd-border);
+  background: var(--pd-panel);
+  box-shadow: 8px 8px 0 var(--pd-ink);
+}

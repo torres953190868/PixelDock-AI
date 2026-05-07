@@ -1,0 +1,6 @@
+@import '../../src/styles/pixel.css';
+
+body {
+  margin: 0;
+  background: #17131f;
+}

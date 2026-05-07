@@ -1,0 +1,158 @@
+.pd-resize-handle {
+  appearance: none;
+  position: absolute;
+  z-index: 3;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  touch-action: none;
+}
+
+.pd-resize-handle:focus-visible {
+  outline: 2px solid var(--pd-accent);
+  outline-offset: -2px;
+}
+
+.pd-resize-handle::after {
+  content: "";
+  position: absolute;
+  background: var(--pd-accent);
+  opacity: 0;
+}
+
+.pd-resize-handle:hover::after,
+.pd-resize-handle:focus-visible::after {
+  opacity: 1;
+}
+
+.pd-resize-n,
+.pd-resize-s {
+  right: 16px;
+  left: 16px;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.pd-resize-e,
+.pd-resize-w {
+  top: 16px;
+  bottom: 16px;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.pd-resize-n {
+  top: 0;
+}
+
+.pd-resize-s {
+  bottom: 0;
+}
+
+.pd-resize-e {
+  right: 0;
+}
+
+.pd-resize-w {
+  left: 0;
+}
+
+.pd-resize-ne,
+.pd-resize-nw,
+.pd-resize-se,
+.pd-resize-sw {
+  width: 16px;
+  height: 16px;
+}
+
+.pd-resize-ne,
+.pd-resize-sw {
+  cursor: nesw-resize;
+}
+
+.pd-resize-nw,
+.pd-resize-se {
+  cursor: nwse-resize;
+}
+
+.pd-resize-ne,
+.pd-resize-nw {
+  top: 0;
+}
+
+.pd-resize-se,
+.pd-resize-sw {
+  bottom: 0;
+}
+
+.pd-resize-ne,
+.pd-resize-se {
+  right: 0;
+}
+
+.pd-resize-nw,
+.pd-resize-sw {
+  left: 0;
+}
+
+.pd-resize-ne::after,
+.pd-resize-nw::after,
+.pd-resize-se::after,
+.pd-resize-sw::after {
+  width: 7px;
+  height: 7px;
+  opacity: 0.72;
+}
+
+.pd-resize-ne::after {
+  top: 3px;
+  right: 3px;
+}
+
+.pd-resize-nw::after {
+  top: 3px;
+  left: 3px;
+}
+
+.pd-resize-se::after {
+  right: 3px;
+  bottom: 3px;
+}
+
+.pd-resize-sw::after {
+  bottom: 3px;
+  left: 3px;
+}
+
+.pd-resize-n::after,
+.pd-resize-s::after {
+  right: 0;
+  left: 0;
+  height: 2px;
+}
+
+.pd-resize-e::after,
+.pd-resize-w::after {
+  top: 0;
+  bottom: 0;
+  width: 2px;
+}
+
+.pd-resize-n::after {
+  top: 3px;
+}
+
+.pd-resize-s::after {
+  bottom: 3px;
+}
+
+.pd-resize-e::after {
+  right: 3px;
+}
+
+.pd-resize-w::after {
+  left: 3px;
+}

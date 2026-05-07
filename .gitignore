@@ -1,0 +1,10 @@
+node_modules
+.output
+.tmp
+.wxt
+dist
+output
+*.log
+.env
+.env.*
+!.env.example
