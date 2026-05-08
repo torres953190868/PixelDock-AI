@@ -61,6 +61,28 @@ const LOCAL_DEEPSEEK_API_KEY = (
   ''
 ).trim();
 
+const LOCAL_DEEPSEEK_DEFAULT_MODEL = (
+  import.meta.env.WXT_DEEPSEEK_MODEL ||
+  import.meta.env.DEEPSEEK_MODEL ||
+  ''
+).trim();
+
+const LOCAL_DEEPSEEK_TRANSLATOR_MODEL = (
+  import.meta.env.WXT_DEEPSEEK_TRANSLATOR_MODEL ||
+  import.meta.env.DEEPSEEK_TRANSLATOR_MODEL ||
+  ''
+).trim();
+
+const LOCAL_DEEPSEEK_WRITER_MODEL = (
+  import.meta.env.WXT_DEEPSEEK_WRITER_MODEL ||
+  import.meta.env.DEEPSEEK_WRITER_MODEL ||
+  ''
+).trim();
+
+type DeepSeekTask = 'translator' | 'writer' | 'default';
+
+const DEEPSEEK_TIMEOUT_MS = 45000;
+
 function pixelError(
   code: PixelDockError['code'],
   message: string,
@@ -79,21 +101,40 @@ function fail<T>(error: PixelDockError): RuntimeResponse<T> {
   return { ok: false, error };
 }
 
-async function callDeepSeek(settings: Settings, messages: DeepSeekMessage[]): Promise<RuntimeResponse<string>> {
-  const apiKey = settings.apiKey.trim() || LOCAL_DEEPSEEK_API_KEY;
+function resolveDeepSeekModel(settings: Settings, task: DeepSeekTask): string {
+  const taskModel =
+    task === 'translator'
+      ? LOCAL_DEEPSEEK_TRANSLATOR_MODEL
+      : task === 'writer'
+        ? LOCAL_DEEPSEEK_WRITER_MODEL
+        : '';
+
+  return taskModel || settings.model.trim() || LOCAL_DEEPSEEK_DEFAULT_MODEL || 'deepseek-chat';
+}
+
+async function callDeepSeek(
+  settings: Settings,
+  messages: DeepSeekMessage[],
+  task: DeepSeekTask = 'default',
+): Promise<RuntimeResponse<string>> {
+  const apiKey = LOCAL_DEEPSEEK_API_KEY || settings.apiKey.trim();
   if (!apiKey) {
     return fail(pixelError('MISSING_API_KEY', 'Add your DeepSeek API key in Options or .env.local.', false));
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), DEEPSEEK_TIMEOUT_MS);
+
   try {
     const response = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: settings.model.trim() || 'deepseek-chat',
+        model: resolveDeepSeekModel(settings, task),
         messages,
         response_format: { type: 'json_object' },
         temperature: 0.2,
@@ -132,7 +173,12 @@ async function callDeepSeek(settings: Settings, messages: DeepSeekMessage[]): Pr
     if (err instanceof SyntaxError) {
       return fail(pixelError('MALFORMED_JSON', 'DeepSeek response was not valid JSON.', true, err));
     }
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      return fail(pixelError('NETWORK_ERROR', 'DeepSeek request timed out after 45 seconds.', true, err));
+    }
     return fail(pixelError('NETWORK_ERROR', 'Network request failed. Check your connection.', true, err));
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -177,18 +223,22 @@ export async function translateText(
   payload: TranslatePayload,
   settings: Settings,
 ): Promise<RuntimeResponse<LLMTranslationResponse>> {
-  const response = await callDeepSeek(settings, [
-    { role: 'system', content: translatorSystemPrompt(settings.targetLanguage || 'zh-CN') },
-    {
-      role: 'user',
-      content: JSON.stringify({
-        selectedText: payload.selectedText,
-        sentence: payload.sentence,
-        pageUrl: payload.url,
-        pageTitle: payload.pageTitle,
-      }),
-    },
-  ]);
+  const response = await callDeepSeek(
+    settings,
+    [
+      { role: 'system', content: translatorSystemPrompt(settings.targetLanguage || 'zh-CN') },
+      {
+        role: 'user',
+        content: JSON.stringify({
+          selectedText: payload.selectedText,
+          sentence: payload.sentence,
+          pageUrl: payload.url,
+          pageTitle: payload.pageTitle,
+        }),
+      },
+    ],
+    'translator',
+  );
   if (!response.ok) return response;
 
   const validated = validateSchema(TranslationResponseSchema, response.data);
@@ -204,18 +254,22 @@ export async function explainWord(
   payload: TranslatePayload,
   settings: Settings,
 ): Promise<RuntimeResponse<WordExplanationResponse>> {
-  const response = await callDeepSeek(settings, [
-    { role: 'system', content: wordExplanationPrompt },
-    {
-      role: 'user',
-      content: JSON.stringify({
-        selectedText: payload.selectedText,
-        sentence: payload.sentence,
-        pageUrl: payload.url,
-        pageTitle: payload.pageTitle,
-      }),
-    },
-  ]);
+  const response = await callDeepSeek(
+    settings,
+    [
+      { role: 'system', content: wordExplanationPrompt },
+      {
+        role: 'user',
+        content: JSON.stringify({
+          selectedText: payload.selectedText,
+          sentence: payload.sentence,
+          pageUrl: payload.url,
+          pageTitle: payload.pageTitle,
+        }),
+      },
+    ],
+    'translator',
+  );
   if (!response.ok) return response;
   return validateSchema(WordExplanationResponseSchema, response.data);
 }
@@ -225,15 +279,19 @@ export async function generateWriterDraft(
   settings: Settings,
 ): Promise<RuntimeResponse<LLMWriterResponse>> {
   const prompt = writerPromptForPlatform(payload.platform, settings.writerPrompts);
-  const response = await callDeepSeek(settings, [
-    { role: 'system', content: prompt },
-    {
-      role: 'user',
-      content: JSON.stringify({
-        idea: payload.idea,
-      }),
-    },
-  ]);
+  const response = await callDeepSeek(
+    settings,
+    [
+      { role: 'system', content: prompt },
+      {
+        role: 'user',
+        content: JSON.stringify({
+          idea: payload.idea,
+        }),
+      },
+    ],
+    'writer',
+  );
   if (!response.ok) return response;
 
   if (payload.platform === 'x') {

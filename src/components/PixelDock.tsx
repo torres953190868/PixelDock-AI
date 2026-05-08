@@ -13,6 +13,8 @@ import type {
 } from '@/types';
 
 export interface PixelDockHandle {
+  hide: () => void;
+  showHome: () => void;
   openTranslatorFromSelection: (
     source: SelectionContext['source'],
     fallbackText?: string,
@@ -132,6 +134,7 @@ export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function Pi
   { translateSelection, generateWriter },
   ref,
 ) {
+  const [visible, setVisible] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [panel, setPanel] = useState<PixelDockPanel>('home');
   const [translatorState, setTranslatorState] = useState<TranslatorPanelState>({ status: 'idle' });
@@ -160,6 +163,7 @@ export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function Pi
   ) => {
     const requestId = translationRequestIdRef.current + 1;
     translationRequestIdRef.current = requestId;
+    setVisible(true);
     setCollapsed(false);
     setPanel('translator');
     setTranslatorState((current) => {
@@ -190,7 +194,19 @@ export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function Pi
     }
   };
 
+  const showHome = () => {
+    setVisible(true);
+    setCollapsed(false);
+    setPanel('home');
+  };
+
+  const hide = () => {
+    setVisible(false);
+  };
+
   useImperativeHandle(ref, () => ({
+    hide,
+    showHome,
     openTranslatorFromSelection,
   }));
 
@@ -292,12 +308,15 @@ export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function Pi
   };
 
   const openPanel = (nextPanel: PixelDockPanel) => {
+    setVisible(true);
     setCollapsed(false);
     setPanel(nextPanel);
     if (nextPanel === 'translator' && translatorState.status === 'idle') {
       setTranslatorState({ status: 'idle' });
     }
   };
+
+  if (!visible) return null;
 
   return (
     <section

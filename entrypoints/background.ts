@@ -16,8 +16,9 @@ function pixelError(
   code: PixelDockError['code'],
   message: string,
   retryable = false,
+  details?: unknown,
 ): PixelDockError {
-  return { code, message, retryable };
+  return { code, message, retryable, details };
 }
 
 function setupContextMenu() {
@@ -75,7 +76,19 @@ export default defineBackground(() => {
   });
 
   chrome.runtime.onMessage.addListener((message: RuntimeRequest, _sender, sendResponse) => {
-    void handleMessage(message).then(sendResponse);
+    void handleMessage(message)
+      .then(sendResponse)
+      .catch((err) => {
+        sendResponse({
+          ok: false,
+          error: pixelError(
+            'UNKNOWN_ERROR',
+            err instanceof Error ? err.message : 'PixelDock background request failed.',
+            true,
+            err,
+          ),
+        });
+      });
     return true;
   });
 });

@@ -69,6 +69,13 @@ export function getSelectedText(fallbackText = ''): string {
   return normalized;
 }
 
+export function hasSelectedText(): boolean {
+  const controlText = selectedTextFromControl();
+  const selection = window.getSelection();
+  const selectedText = controlText || (!selection || selection.isCollapsed ? '' : selection.toString());
+  return Boolean(normalizeSelectedText(selectedText));
+}
+
 function nearestReadableElement(node: Node | null): HTMLElement | null {
   let element = node instanceof HTMLElement ? node : node?.parentElement ?? null;
   let fallback: HTMLElement | null = null;

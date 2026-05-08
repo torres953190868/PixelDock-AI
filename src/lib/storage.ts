@@ -1,5 +1,5 @@
-import { defaultWriterPrompts } from '@/lib/prompts';
-import type { Settings, VocabItem, WriterDraft } from '@/types';
+import { defaultWriterPrompts, legacyDefaultWriterPrompts } from '@/lib/prompts';
+import type { Settings, VocabItem, WriterDraft, WriterPlatform } from '@/types';
 
 const STORAGE_KEYS = {
   settings: 'pixeldock.settings',
@@ -17,14 +17,27 @@ export const DEFAULT_SETTINGS: Settings = {
 
 const LOCAL_DEEPSEEK_MODEL = (import.meta.env.WXT_DEEPSEEK_MODEL || '').trim();
 
+function withDefaultWriterPrompts(stored?: Partial<Settings>): Settings['writerPrompts'] {
+  const storedPrompts: Partial<Record<WriterPlatform, string>> = stored?.writerPrompts ?? {};
+  const writerPrompts = {
+    ...defaultWriterPrompts,
+    ...storedPrompts,
+  };
+
+  for (const platform of Object.keys(legacyDefaultWriterPrompts) as WriterPlatform[]) {
+    if (storedPrompts[platform]?.trim() === legacyDefaultWriterPrompts[platform]?.trim()) {
+      writerPrompts[platform] = defaultWriterPrompts[platform];
+    }
+  }
+
+  return writerPrompts;
+}
+
 function withLocalDefaults(stored?: Partial<Settings>): Settings {
   const merged = {
     ...DEFAULT_SETTINGS,
     ...stored,
-    writerPrompts: {
-      ...defaultWriterPrompts,
-      ...(stored?.writerPrompts ?? {}),
-    },
+    writerPrompts: withDefaultWriterPrompts(stored),
   };
   return {
     ...merged,

@@ -3,7 +3,7 @@ import '@/styles/dock-resize.css';
 import { createRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import { PixelDock, type PixelDockHandle } from '@/components/PixelDock';
-import { DOUBLE_CTRL_WINDOW_MS, getSelectionContext } from '@/lib/selection';
+import { DOUBLE_CTRL_WINDOW_MS, getSelectionContext, hasSelectedText } from '@/lib/selection';
 import type {
   ContextMenuTranslateMessage,
   GenerateWriterPayload,
@@ -125,10 +125,19 @@ export default defineContentScript({
       const now = Date.now();
       if (now - lastCtrlAt <= DOUBLE_CTRL_WINDOW_MS) {
         lastCtrlAt = 0;
-        void dockRef.current?.openTranslatorFromSelection('keyboard');
+        if (hasSelectedText()) {
+          void dockRef.current?.openTranslatorFromSelection('keyboard');
+        } else {
+          dockRef.current?.showHome();
+        }
         return;
       }
       lastCtrlAt = now;
+    });
+
+    ctx.addEventListener(window, 'wxt:locationchange', () => {
+      lastCtrlAt = 0;
+      dockRef.current?.hide();
     });
 
     chrome.runtime.onMessage.addListener((message: ContextMenuTranslateMessage) => {

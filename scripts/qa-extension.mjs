@@ -10,6 +10,8 @@ const profileDir = path.join(root, '.tmp', `pixeldock-qa-${Date.now()}`);
 
 const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const edgePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
+const macChromePath = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const macEdgePath = '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge';
 let lastReport = null;
 const localKeyEnvNames = ['WXT_DEEPSEEK_API_KEY', 'DEEPSEEK_API_KEY'];
 
@@ -30,6 +32,8 @@ function hasLocalDeepSeekKeyFallback() {
 function executablePath() {
   const bundledChromium = chromium.executablePath();
   if (existsSync(bundledChromium)) return bundledChromium;
+  if (existsSync(macChromePath)) return macChromePath;
+  if (existsSync(macEdgePath)) return macEdgePath;
   if (existsSync(chromePath)) return chromePath;
   if (existsSync(edgePath)) return edgePath;
   throw new Error('Chrome or Edge executable was not found.');
@@ -65,7 +69,7 @@ function startServer() {
 async function shadowState(page) {
   return page.evaluate(() => {
     const host = Array.from(document.querySelectorAll('*')).find((element) =>
-      element.shadowRoot?.querySelector('[data-testid="PixelDock shell"]'),
+      element.shadowRoot?.querySelector('.pixeldock-root, [data-testid="PixelDock shell"]'),
     );
     const root = host?.shadowRoot;
     const shell = root?.querySelector('[data-testid="PixelDock shell"]');
@@ -245,6 +249,7 @@ async function run() {
     args: [
       `--disable-extensions-except=${extensionPath}`,
       `--load-extension=${extensionPath}`,
+      '--disable-features=DisableLoadExtensionCommandLineSwitch',
       '--no-first-run',
       '--no-default-browser-check',
     ],
@@ -262,14 +267,8 @@ async function run() {
   lastReport = report;
 
   try {
-    const startupWorker =
-      context.serviceWorkers()[0] ??
-      (await context.waitForEvent('serviceworker', { timeout: 5000 }).catch(() => null));
-    const worker = startupWorker ?? (await context.waitForEvent('serviceworker', { timeout: 5000 }).catch(() => null));
-    assert(worker, 'Extension service worker did not start.');
-    const extensionId = new URL(worker.url()).host;
     report.diagnostics.serviceWorkersAtStartup = context.serviceWorkers().map((worker) => worker.url());
-    report.diagnostics.hasStartupWorker = Boolean(startupWorker);
+    report.diagnostics.hasStartupWorker = report.diagnostics.serviceWorkersAtStartup.length > 0;
 
     const page = await context.newPage();
     page.on('console', (message) => {
@@ -295,6 +294,27 @@ async function run() {
     }));
     report.diagnostics.injection = injectionDiagnostics;
 
+    const worker =
+      context.serviceWorkers()[0] ??
+      (await context.waitForEvent('serviceworker', { timeout: 5000 }).catch(() => null));
+    assert(worker, 'Extension service worker did not start.');
+    const extensionId = new URL(worker.url()).host;
+
+    await page.waitForFunction(() =>
+      Array.from(document.querySelectorAll('*')).some((element) =>
+        element.shadowRoot?.querySelector('.pixeldock-root'),
+      ),
+    );
+
+    const hiddenOnLoad = await shadowState(page);
+    assert(hiddenOnLoad.hasHost, 'PixelDock shadow host did not render.');
+    assert(!hiddenOnLoad.hasShell, 'PixelDock should stay hidden until double Ctrl is pressed.');
+    assert(!hiddenOnLoad.hasTranslator, 'Translator button should be hidden on initial page load.');
+    assert(!hiddenOnLoad.hasWriter, 'Writer button should be hidden on initial page load.');
+    report.dock.hiddenOnLoad = hiddenOnLoad;
+
+    await page.keyboard.press('Control');
+    await page.keyboard.press('Control');
     await page.waitForFunction(() =>
       Array.from(document.querySelectorAll('*')).some((element) =>
         element.shadowRoot?.querySelector('[data-testid="PixelDock shell"]'),
@@ -309,6 +329,25 @@ async function run() {
     assert(initial.rect.right > initial.viewport.width - 40, 'Dock is not bottom-right by default.');
     assert(initial.rect.bottom > initial.viewport.height - 40, 'Dock is not bottom-right by default.');
     report.dock.initial = initial;
+
+    await page.evaluate(() => {
+      history.pushState({}, '', '/spa-route');
+    });
+    await page.waitForFunction(() =>
+      Array.from(document.querySelectorAll('*')).some((element) =>
+        element.shadowRoot?.querySelector('.pixeldock-root') &&
+        !element.shadowRoot?.querySelector('[data-testid="PixelDock shell"]'),
+      ),
+    );
+    report.dock.hidesOnLocationChange = true;
+
+    await page.keyboard.press('Control');
+    await page.keyboard.press('Control');
+    await page.waitForFunction(() =>
+      Array.from(document.querySelectorAll('*')).some((element) =>
+        element.shadowRoot?.querySelector('[data-testid="PixelDock shell"]'),
+      ),
+    );
 
     await dragTitlebar(page);
     const dragged = await shadowState(page);

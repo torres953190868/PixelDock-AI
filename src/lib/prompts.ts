@@ -1,12 +1,27 @@
 import type { WriterPlatform } from '@/types';
 
-export const defaultWriterPrompts: Record<WriterPlatform, string> = {
+export const legacyDefaultWriterPrompts: Partial<Record<WriterPlatform, string>> = {
   x: `You are a sharp social media copywriter.
 Platform: X.
 Input is the user's rough idea.
 Generate:
 - 3 post variants
 - concise, opinionated, readable
+- no fake facts
+- no excessive hashtags
+Return JSON only:
+{
+  "variants": string[]
+}`,
+};
+
+export const defaultWriterPrompts: Record<WriterPlatform, string> = {
+  x: `You are a sharp X copywriter.
+Turn the user's rough idea into polished English posts for X.
+Generate:
+- 3 English post variants
+- each variant opens with a strong hook that makes people stop scrolling
+- natural, concise, opinionated, readable English
 - no fake facts
 - no excessive hashtags
 Return JSON only:
@@ -75,10 +90,21 @@ Return JSON only:
   "sentenceTranslation": string
 }`;
 
+const xEnglishOutputRule = `Non-negotiable X output language rule:
+- Write every generated X variant in English only, even when the user's idea is written in another language.
+- Do not include Chinese or mixed-language phrasing in "variants".
+- If the idea contains non-English wording, translate the meaning into natural English first.`;
+
 export function writerPromptForPlatform(
   platform: WriterPlatform,
   customPrompts: Partial<Record<WriterPlatform, string>> = {},
 ): string {
   const custom = customPrompts[platform]?.trim();
-  return custom || defaultWriterPrompts[platform];
+  const prompt = custom || defaultWriterPrompts[platform];
+
+  if (platform === 'x') {
+    return `${prompt}\n\n${xEnglishOutputRule}`;
+  }
+
+  return prompt;
 }
