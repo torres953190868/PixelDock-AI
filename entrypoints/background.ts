@@ -31,9 +31,21 @@ function setupContextMenu() {
   });
 }
 
+const pendingTranslations = new Map<string, AbortController>();
+
 async function handleTranslate(payload: TranslatePayload): Promise<RuntimeResponse<LLMTranslationResponse>> {
   const settings = await getSettings();
-  return translateText(payload, settings);
+  const requestId = payload.requestId?.trim();
+  if (!requestId) {
+    return translateText(payload, settings);
+  }
+  const controller = new AbortController();
+  pendingTranslations.set(requestId, controller);
+  try {
+    return await translateText(payload, settings, controller.signal);
+  } finally {
+    pendingTranslations.delete(requestId);
+  }
 }
 
 async function handleWriter(payload: GenerateWriterPayload): Promise<RuntimeResponse<LLMWriterResponse>> {
@@ -50,6 +62,10 @@ async function handleWriter(payload: GenerateWriterPayload): Promise<RuntimeResp
 async function handleMessage(message: RuntimeRequest): Promise<RuntimeResponse<unknown>> {
   if (message?.type === 'PIXELDOCK_TRANSLATE') {
     return handleTranslate(message.payload);
+  }
+  if (message?.type === 'PIXELDOCK_CANCEL_TRANSLATE') {
+    pendingTranslations.get(message.payload?.requestId ?? '')?.abort();
+    return { ok: true, data: null };
   }
   if (message?.type === 'PIXELDOCK_GENERATE_WRITER_DRAFT') {
     return handleWriter(message.payload);

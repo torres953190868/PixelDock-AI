@@ -83,6 +83,13 @@
   text-transform: uppercase;
 }
 
+.pd-titlebar-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .pd-pixel-mark {
   width: 12px;
   height: 12px;
@@ -298,12 +305,6 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
-}
-
-.pd-meta-label {
-  color: var(--pd-muted);
-  font-size: 11px;
-  text-transform: uppercase;
 }
 
 .pd-favicon {

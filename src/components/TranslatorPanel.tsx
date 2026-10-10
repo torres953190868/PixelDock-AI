@@ -19,6 +19,8 @@ interface TranslatorPanelProps {
   state: TranslatorPanelState;
   onTranslateSelection: () => void;
   onOpenVocabulary: () => void;
+  onRetry: () => void;
+  onCancel: () => void;
 }
 
 async function copyText(value: string, setMessage: (message: string) => void) {
@@ -30,6 +32,8 @@ export function TranslatorPanel({
   state,
   onTranslateSelection,
   onOpenVocabulary,
+  onRetry,
+  onCancel,
 }: TranslatorPanelProps) {
   const [notice, setNotice] = useState('');
 
@@ -89,6 +93,15 @@ export function TranslatorPanel({
       {state.status === 'loading' && (
         <div className="pd-card" aria-label="Translator loading state" data-testid="Translator loading state">
           <p className="pd-result-text">Translating selected text...</p>
+          <button
+            type="button"
+            className="pd-button"
+            aria-label="Cancel translation"
+            data-testid="Cancel translation"
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
         </div>
       )}
 
@@ -96,6 +109,17 @@ export function TranslatorPanel({
         <div className="pd-card" aria-label="Translator error" data-testid="Translator error">
           <strong className="pd-error">{state.error.code}</strong>
           <p className="pd-result-text">{state.error.message}</p>
+          {state.error.retryable && (
+            <button
+              type="button"
+              className="pd-button"
+              aria-label="Retry translation"
+              data-testid="Retry translation"
+              onClick={onRetry}
+            >
+              Retry
+            </button>
+          )}
         </div>
       )}
 
@@ -109,6 +133,17 @@ export function TranslatorPanel({
             >
               <strong className="pd-error">{state.refreshError.code}</strong>
               <p className="pd-result-text">{state.refreshError.message}</p>
+              {state.refreshError.retryable && (
+                <button
+                  type="button"
+                  className="pd-button"
+                  aria-label="Retry translation"
+                  data-testid="Retry translation"
+                  onClick={onRetry}
+                >
+                  Retry
+                </button>
+              )}
             </div>
           )}
 

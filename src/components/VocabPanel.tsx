@@ -143,33 +143,36 @@ export function VocabPanel() {
                   className="pd-vocab-context"
                   aria-label={`Vocabulary sentence for ${item.word}`}
                   data-testid="Vocabulary sentence"
+                  open
                 >
                   <summary className="pd-details-summary">Sentence</summary>
                   <p className="pd-result-text">{item.sentence || item.selectedText}</p>
                 </details>
-                <section
-                  className="pd-source-row"
+                <details
+                  className="pd-vocab-context"
                   aria-label={`Vocabulary source for ${item.word}`}
                   data-testid="Vocabulary source"
                 >
-                  {item.favicon && (
-                    <img className="pd-favicon" src={item.favicon} alt="" aria-hidden="true" />
-                  )}
-                  <div className="pd-source-meta">
-                    <strong className="pd-meta-label">Source</strong>
-                    <a
-                      className="pd-link pd-source-link"
-                      href={item.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      title={item.url}
-                      aria-label={`Open source page for ${item.word}: ${label}`}
-                      data-testid="Open vocabulary source"
-                    >
-                      {label}
-                    </a>
+                  <summary className="pd-details-summary">Source</summary>
+                  <div className="pd-source-row">
+                    {item.favicon && (
+                      <img className="pd-favicon" src={item.favicon} alt="" aria-hidden="true" />
+                    )}
+                    <div className="pd-source-meta">
+                      <a
+                        className="pd-link pd-source-link"
+                        href={item.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={item.url}
+                        aria-label={`Open source page for ${item.word}: ${label}`}
+                        data-testid="Open vocabulary source"
+                      >
+                        {label}
+                      </a>
+                    </div>
                   </div>
-                </section>
+                </details>
               </li>
             );
           })}

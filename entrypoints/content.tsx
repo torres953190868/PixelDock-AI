@@ -48,6 +48,7 @@ function sendRuntimeMessage<T>(request: RuntimeRequest): Promise<RuntimeResponse
 async function translateSelection(
   source: SelectionContext['source'],
   fallbackText = '',
+  requestId?: string,
 ): Promise<TranslationFlowResult> {
   const { context, warning } = getSelectionContext(source, fallbackText);
   const response = await sendRuntimeMessage<LLMTranslationResponse>({
@@ -57,11 +58,16 @@ async function translateSelection(
       sentence: context.sentence,
       url: context.url,
       pageTitle: context.pageTitle,
+      requestId,
     },
   });
 
   if (!response.ok) throw response.error;
   return { context, result: response.data, warning };
+}
+
+function cancelTranslationRequest(requestId: string): void {
+  void sendRuntimeMessage({ type: 'PIXELDOCK_CANCEL_TRANSLATE', payload: { requestId } });
 }
 
 async function generateWriter(platform: WriterPlatform, idea: string): Promise<LLMWriterResponse> {
@@ -106,6 +112,7 @@ export default defineContentScript({
             ref={dockRef}
             translateSelection={translateSelection}
             generateWriter={generateWriter}
+            cancelTranslation={cancelTranslationRequest}
           />,
         );
         return root;
@@ -119,8 +126,12 @@ export default defineContentScript({
 
     let lastCtrlAt = 0;
     ctx.addEventListener(window, 'keydown', (event: KeyboardEvent) => {
-      if (event.key !== 'Control' || event.repeat || isEditableTarget(event)) return;
       if (shadowWrapper && event.composedPath().includes(shadowWrapper)) return;
+      if (event.key === 'Escape') {
+        dockRef.current?.hide();
+        return;
+      }
+      if (event.key !== 'Control' || event.repeat || isEditableTarget(event)) return;
 
       const now = Date.now();
       if (now - lastCtrlAt <= DOUBLE_CTRL_WINDOW_MS) {

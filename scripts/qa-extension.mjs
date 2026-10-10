@@ -368,6 +368,39 @@ async function run() {
     await clickShadow(page, 'Expand PixelDock');
     report.dock.collapsible = true;
 
+    await clickShadow(page, 'Close PixelDock');
+    await page.waitForFunction(() =>
+      Array.from(document.querySelectorAll('*')).some((element) =>
+        element.shadowRoot?.querySelector('.pixeldock-root') &&
+        !element.shadowRoot?.querySelector('[data-testid="PixelDock shell"]'),
+      ),
+    );
+    report.dock.closesViaButton = true;
+
+    await page.keyboard.press('Control');
+    await page.keyboard.press('Control');
+    await page.waitForFunction(() =>
+      Array.from(document.querySelectorAll('*')).some((element) =>
+        element.shadowRoot?.querySelector('[data-testid="PixelDock shell"]'),
+      ),
+    );
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() =>
+      Array.from(document.querySelectorAll('*')).some((element) =>
+        element.shadowRoot?.querySelector('.pixeldock-root') &&
+        !element.shadowRoot?.querySelector('[data-testid="PixelDock shell"]'),
+      ),
+    );
+    report.dock.closesViaEscape = true;
+
+    await page.keyboard.press('Control');
+    await page.keyboard.press('Control');
+    await page.waitForFunction(() =>
+      Array.from(document.querySelectorAll('*')).some((element) =>
+        element.shadowRoot?.querySelector('[data-testid="PixelDock shell"]'),
+      ),
+    );
+
     await setExtensionStorage(worker, { 'pixeldock.vocab': createVocabFixture(url) });
     await clickShadow(page, 'Vocabulary');
     await page.waitForFunction(() => {
@@ -415,8 +448,11 @@ async function run() {
     report.options.saveWorks = true;
 
     await optionsPage.locator('[data-testid="Clear local data"]').click();
-    await optionsPage.locator('[data-testid="Options notice"]').waitFor();
+    await optionsPage.locator('[data-testid="Clear data warning"]').waitFor();
+    await optionsPage.locator('[data-testid="Clear local data"]').click();
+    await optionsPage.locator('[data-testid="Options notice"]', { hasText: 'Local data cleared.' }).waitFor();
     report.options.clearWorks = true;
+    report.options.clearRequiresConfirmation = true;
 
     console.log(JSON.stringify({ status: 'pass', report }, null, 2));
   } finally {

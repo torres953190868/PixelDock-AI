@@ -25,8 +25,10 @@ interface PixelDockProps {
   translateSelection: (
     source: SelectionContext['source'],
     fallbackText?: string,
+    requestId?: string,
   ) => Promise<TranslationFlowResult>;
   generateWriter: (platform: WriterPlatform, idea: string) => Promise<LLMWriterResponse>;
+  cancelTranslation: (requestId: string) => void;
 }
 
 const DOCK_VIEWPORT_MARGIN = 8;
@@ -131,7 +133,7 @@ function clearTranslatorRefreshError(
 }
 
 export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function PixelDock(
-  { translateSelection, generateWriter },
+  { translateSelection, generateWriter, cancelTranslation },
   ref,
 ) {
   const [visible, setVisible] = useState(false);
@@ -143,6 +145,11 @@ export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function Pi
   const shellRef = useRef<HTMLElement | null>(null);
   const dockSizeRef = useRef<DockSize | null>(null);
   const translationRequestIdRef = useRef(0);
+  const activeRequestIdRef = useRef<string | null>(null);
+  const lastTranslateArgsRef = useRef<{
+    source: SelectionContext['source'];
+    fallbackText: string;
+  } | null>(null);
   const hasCustomPosition = position !== null;
   const hasCustomSize = dockSize !== null;
 
@@ -163,6 +170,9 @@ export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function Pi
   ) => {
     const requestId = translationRequestIdRef.current + 1;
     translationRequestIdRef.current = requestId;
+    const backgroundRequestId = `translate_${requestId}_${Date.now()}`;
+    activeRequestIdRef.current = backgroundRequestId;
+    lastTranslateArgsRef.current = { source, fallbackText };
     setVisible(true);
     setCollapsed(false);
     setPanel('translator');
@@ -172,8 +182,9 @@ export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function Pi
       return nextState;
     });
     try {
-      const flow = await translateSelection(source, fallbackText);
+      const flow = await translateSelection(source, fallbackText, backgroundRequestId);
       if (translationRequestIdRef.current !== requestId) return;
+      activeRequestIdRef.current = null;
       const nextState: TranslatorPanelState = {
         status: 'success',
         context: flow.context,
@@ -183,6 +194,7 @@ export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function Pi
       setTranslatorState(nextState);
     } catch (err) {
       if (translationRequestIdRef.current !== requestId) return;
+      activeRequestIdRef.current = null;
       const error = toPixelDockError(err);
       setTranslatorState((current) => {
         const nextState: TranslatorPanelState =
@@ -192,6 +204,19 @@ export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function Pi
         return nextState;
       });
     }
+  };
+
+  const retryTranslation = () => {
+    const lastAttempt = lastTranslateArgsRef.current;
+    void openTranslatorFromSelection(lastAttempt?.source ?? 'dock', lastAttempt?.fallbackText ?? '');
+  };
+
+  const cancelActiveTranslation = () => {
+    translationRequestIdRef.current += 1;
+    const requestId = activeRequestIdRef.current;
+    activeRequestIdRef.current = null;
+    if (requestId) cancelTranslation(requestId);
+    setTranslatorState((current) => (current.status === 'loading' ? { status: 'idle' } : current));
   };
 
   const showHome = () => {
@@ -325,6 +350,17 @@ export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function Pi
       style={shellStyle}
       aria-label="PixelDock AI"
       data-testid="PixelDock shell"
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape') return;
+        const target = event.target;
+        if (
+          target instanceof HTMLElement &&
+          (target.closest('input, textarea') || target.isContentEditable)
+        ) {
+          return;
+        }
+        hide();
+      }}
     >
       <header
         className="pd-titlebar"
@@ -336,16 +372,30 @@ export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function Pi
           <span aria-hidden="true" className="pd-pixel-mark" />
           {!collapsed && <span>PixelDock AI</span>}
         </div>
-        <button
-          type="button"
-          className="pd-icon-button"
-          aria-label={collapsed ? 'Expand PixelDock' : 'Collapse PixelDock'}
-          data-testid={collapsed ? 'Expand PixelDock' : 'Collapse PixelDock'}
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={() => setCollapsed((value) => !value)}
-        >
-          {collapsed ? '+' : '-'}
-        </button>
+        <div className="pd-titlebar-actions">
+          <button
+            type="button"
+            className="pd-icon-button"
+            aria-label={collapsed ? 'Expand PixelDock' : 'Collapse PixelDock'}
+            data-testid={collapsed ? 'Expand PixelDock' : 'Collapse PixelDock'}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={() => setCollapsed((value) => !value)}
+          >
+            {collapsed ? '+' : '-'}
+          </button>
+          {!collapsed && (
+            <button
+              type="button"
+              className="pd-icon-button"
+              aria-label="Close PixelDock"
+              data-testid="Close PixelDock"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={hide}
+            >
+              ×
+            </button>
+          )}
+        </div>
       </header>
 
       {!collapsed && (
@@ -378,6 +428,8 @@ export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function Pi
                 state={translatorState}
                 onTranslateSelection={() => openTranslatorFromSelection('dock')}
                 onOpenVocabulary={() => openPanel('vocab')}
+                onRetry={retryTranslation}
+                onCancel={cancelActiveTranslation}
               />
             )}
             {panel === 'writer' && <WriterPanel onGenerateWriter={generateWriter} />}

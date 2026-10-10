@@ -122,6 +122,7 @@ export interface TranslatePayload {
   sentence: string;
   url: string;
   pageTitle: string;
+  requestId?: string;
 }
 
 export interface GenerateWriterPayload {
@@ -131,7 +132,8 @@ export interface GenerateWriterPayload {
 
 export type RuntimeRequest =
   | { type: 'PIXELDOCK_TRANSLATE'; payload: TranslatePayload }
-  | { type: 'PIXELDOCK_GENERATE_WRITER_DRAFT'; payload: GenerateWriterPayload };
+  | { type: 'PIXELDOCK_GENERATE_WRITER_DRAFT'; payload: GenerateWriterPayload }
+  | { type: 'PIXELDOCK_CANCEL_TRANSLATE'; payload: { requestId: string } };
 
 export interface ContextMenuTranslateMessage {
   type: 'PIXELDOCK_CONTEXT_MENU_TRANSLATE';

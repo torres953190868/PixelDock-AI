@@ -116,6 +116,7 @@ async function callDeepSeek(
   settings: Settings,
   messages: DeepSeekMessage[],
   task: DeepSeekTask = 'default',
+  signal?: AbortSignal,
 ): Promise<RuntimeResponse<string>> {
   const apiKey = LOCAL_DEEPSEEK_API_KEY || settings.apiKey.trim();
   if (!apiKey) {
@@ -124,6 +125,14 @@ async function callDeepSeek(
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), DEEPSEEK_TIMEOUT_MS);
+  const abortFromCaller = () => controller.abort();
+  if (signal) {
+    if (signal.aborted) {
+      controller.abort();
+    } else {
+      signal.addEventListener('abort', abortFromCaller, { once: true });
+    }
+  }
 
   try {
     const response = await fetch('https://api.deepseek.com/chat/completions', {
@@ -170,6 +179,9 @@ async function callDeepSeek(
 
     return ok(content);
   } catch (err) {
+    if (signal?.aborted) {
+      return fail(pixelError('NETWORK_ERROR', 'Request cancelled before completion.', true, err));
+    }
     if (err instanceof SyntaxError) {
       return fail(pixelError('MALFORMED_JSON', 'DeepSeek response was not valid JSON.', true, err));
     }
@@ -179,6 +191,7 @@ async function callDeepSeek(
     return fail(pixelError('NETWORK_ERROR', 'Network request failed. Check your connection.', true, err));
   } finally {
     clearTimeout(timeoutId);
+    signal?.removeEventListener('abort', abortFromCaller);
   }
 }
 
@@ -222,6 +235,7 @@ function validateSchema<T>(schema: z.ZodType<T>, raw: string): RuntimeResponse<T
 export async function translateText(
   payload: TranslatePayload,
   settings: Settings,
+  signal?: AbortSignal,
 ): Promise<RuntimeResponse<LLMTranslationResponse>> {
   const response = await callDeepSeek(
     settings,
@@ -238,6 +252,7 @@ export async function translateText(
       },
     ],
     'translator',
+    signal,
   );
   if (!response.ok) return response;
 

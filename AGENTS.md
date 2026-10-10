@@ -34,7 +34,7 @@ Current extension architecture:
 
 ## Read First
 
-- At the start of each new conversation, read `CLAUDE.md` if it exists. If it does not exist, continue without blocking.
+- At the start of each new conversation, read `AGENTS.md` if it exists. If it does not exist, continue without blocking.
 - Use `NeedsDoc.md` as product/PRD context, but verify current implementation from source before assuming a feature exists.
 - This directory is not necessarily a git repository. Check before relying on git commands.
 
@@ -112,7 +112,7 @@ When adding behavior, place it in the narrowest module that owns that concern. A
 
 ## Known Repository Notes
 
-- `CLAUDE.md` is currently absent.
+- `AGENTS.md` is the active agent instruction file, renamed from `CLAUDE.md`.
 - `README.md` is currently absent.
 - `NeedsDoc.md` appears to contain product requirements, but console rendering may show mojibake depending on encoding. Treat it carefully and avoid rewriting it unless encoding is deliberately handled.
 - No file currently exceeds 400 lines based on the project scan, excluding dependencies and generated output.

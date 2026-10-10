@@ -191,6 +191,17 @@ export function WriterPanel({ onGenerateWriter }: WriterPanelProps) {
         <div className="pd-card" aria-label="Writer error" data-testid="Writer error">
           <strong className="pd-error">{status.error.code}</strong>
           <p className="pd-result-text">{status.error.message}</p>
+          {status.error.retryable && (
+            <button
+              type="button"
+              className="pd-button"
+              aria-label="Retry writer generation"
+              data-testid="Retry writer generation"
+              onClick={generate}
+            >
+              Retry
+            </button>
+          )}
         </div>
       )}
       {status.kind === 'success' && renderOutput(status.output, setNotice)}

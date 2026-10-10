@@ -15,10 +15,17 @@ function downloadTextFile(filename: string, text: string) {
 export function OptionsForm() {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [notice, setNotice] = useState('');
+  const [clearArmed, setClearArmed] = useState(false);
 
   useEffect(() => {
     void getSettings().then(setSettings);
   }, []);
+
+  useEffect(() => {
+    if (!clearArmed) return;
+    const timer = window.setTimeout(() => setClearArmed(false), 5000);
+    return () => window.clearTimeout(timer);
+  }, [clearArmed]);
 
   const updatePrompt = (key: keyof Settings['writerPrompts'], value: string) => {
     setSettings((current) => ({
@@ -37,6 +44,12 @@ export function OptionsForm() {
   };
 
   const clear = async () => {
+    if (!clearArmed) {
+      setNotice('');
+      setClearArmed(true);
+      return;
+    }
+    setClearArmed(false);
     await clearLocalData();
     setSettings(await getSettings());
     setNotice('Local data cleared.');
@@ -153,9 +166,14 @@ export function OptionsForm() {
               data-testid="Clear local data"
               onClick={clear}
             >
-              Clear local data
+              {clearArmed ? 'Click again to confirm' : 'Clear local data'}
             </button>
           </div>
+          {clearArmed && (
+            <p className="pd-warning" role="alert" data-testid="Clear data warning">
+              This permanently deletes settings, vocabulary, and writer drafts. Click again to confirm.
+            </p>
+          )}
           {notice && (
             <div className="pd-card" role="status" aria-label="Options notice" data-testid="Options notice">
               {notice}
