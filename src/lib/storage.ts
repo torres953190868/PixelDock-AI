@@ -10,6 +10,9 @@ const STORAGE_KEYS = {
 export const DEFAULT_SETTINGS: Settings = {
   apiKey: '',
   model: 'deepseek-chat',
+  wordApiKey: '',
+  wordModel: 'glm-4-flash',
+  wordBaseUrl: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
   targetLanguage: 'zh-CN',
   writerPrompts: defaultWriterPrompts,
   updatedAt: '',
@@ -43,6 +46,9 @@ function withLocalDefaults(stored?: Partial<Settings>): Settings {
     ...merged,
     apiKey: merged.apiKey.trim(),
     model: merged.model.trim() || LOCAL_DEEPSEEK_MODEL || DEFAULT_SETTINGS.model,
+    wordApiKey: merged.wordApiKey.trim(),
+    wordModel: merged.wordModel.trim() || DEFAULT_SETTINGS.wordModel,
+    wordBaseUrl: merged.wordBaseUrl.trim() || DEFAULT_SETTINGS.wordBaseUrl,
     targetLanguage: merged.targetLanguage || DEFAULT_SETTINGS.targetLanguage,
   };
 }

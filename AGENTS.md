@@ -26,7 +26,7 @@ Current extension architecture:
 - `src/components/*`: React UI panels and options form.
 - `src/lib/selection.ts`: deterministic selection and sentence-context extraction.
 - `src/lib/storage.ts`: `chrome.storage.local` settings, vocabulary, draft persistence, and export helpers.
-- `src/lib/llm.ts`: DeepSeek API calls, JSON parsing, and Zod schema validation.
+- `src/lib/llm.ts`: OpenAI-compatible chat calls, JSON parsing, and Zod schema validation. Routes by task: sentences and writer drafts use DeepSeek; single words and short phrases use the optional word model (settings fields `wordApiKey`/`wordModel`/`wordBaseUrl` or `WXT_WORD_API_KEY`/`WXT_WORD_MODEL`/`WXT_WORD_BASE_URL` env vars), falling back to DeepSeek when no word key is configured.
 - `src/lib/prompts.ts`: translator, word explanation, and writer prompt templates.
 - `src/types/index.ts`: shared runtime, storage, LLM, and UI types.
 - `src/styles/pixel.css`: shared pixel-style UI system for injected dock and options page.
@@ -70,7 +70,7 @@ Minimum verification:
 - Background service worker should own API calls and browser-extension integration such as context menus.
 - Use `chrome.runtime.sendMessage` for content-to-background communication.
 - Use `chrome.storage.local` for settings, vocabulary, and writer drafts.
-- Avoid adding permissions unless a feature requires them. Current manifest permissions are `storage`, `contextMenus`, `activeTab`, and `scripting`; host permission is limited to DeepSeek.
+- Avoid adding permissions unless a feature requires them. Current manifest permissions are `storage`, `contextMenus`, `activeTab`, and `scripting`; host permissions are limited to DeepSeek (`api.deepseek.com`) and the default word-model provider BigModel (`open.bigmodel.cn`). A word-model base URL on another host also needs a matching host permission in `wxt.config.ts`.
 - Do not assume access to data outside normal browser extension capabilities.
 
 ## UI Conventions

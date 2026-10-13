@@ -64,7 +64,7 @@ export function OptionsForm() {
       <form className="pd-options-shell" aria-label="Options form" data-testid="Options form" onSubmit={save}>
         <header className="pd-options-header" aria-labelledby="pixeldock-options-title">
           <h1 id="pixeldock-options-title">PixelDock AI Options</h1>
-          <p className="pd-muted">Configure DeepSeek and local extension data.</p>
+          <p className="pd-muted">Configure DeepSeek, the word model, and local extension data.</p>
         </header>
 
         <section className="pd-card" aria-label="DeepSeek settings" data-testid="DeepSeek settings">
@@ -103,6 +103,50 @@ export function OptionsForm() {
               data-testid="Target language"
               value={settings.targetLanguage}
               onChange={(event) => setSettings({ ...settings, targetLanguage: event.target.value })}
+            />
+          </label>
+        </section>
+
+        <section className="pd-card" aria-label="Word model settings" data-testid="Word model settings">
+          <p className="pd-muted">
+            Single words and short phrases use this OpenAI-compatible model instead of DeepSeek. Leave the API
+            key empty to use DeepSeek for everything.
+          </p>
+          <label className="pd-label" htmlFor="pixeldock-word-api-key">
+            Word model API key
+            <input
+              id="pixeldock-word-api-key"
+              className="pd-input"
+              type="password"
+              aria-label="Word model API key"
+              data-testid="Word model API key"
+              value={settings.wordApiKey}
+              onChange={(event) => setSettings({ ...settings, wordApiKey: event.target.value })}
+              placeholder="BigModel key for GLM-4-Flash"
+            />
+          </label>
+
+          <label className="pd-label" htmlFor="pixeldock-word-model">
+            Word model name
+            <input
+              id="pixeldock-word-model"
+              className="pd-input"
+              aria-label="Word model name"
+              data-testid="Word model name"
+              value={settings.wordModel}
+              onChange={(event) => setSettings({ ...settings, wordModel: event.target.value })}
+            />
+          </label>
+
+          <label className="pd-label" htmlFor="pixeldock-word-base-url">
+            Word model base URL
+            <input
+              id="pixeldock-word-base-url"
+              className="pd-input"
+              aria-label="Word model base URL"
+              data-testid="Word model base URL"
+              value={settings.wordBaseUrl}
+              onChange={(event) => setSettings({ ...settings, wordBaseUrl: event.target.value })}
             />
           </label>
         </section>

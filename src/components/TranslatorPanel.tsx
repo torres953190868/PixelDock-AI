@@ -11,7 +11,6 @@ export type TranslatorPanelState =
       context: SelectionContext;
       result: LLMTranslationResponse;
       warning?: string;
-      refreshError?: PixelDockError;
     }
   | { status: 'error'; error: PixelDockError; context?: SelectionContext };
 
@@ -91,18 +90,26 @@ export function TranslatorPanel({
       )}
 
       {state.status === 'loading' && (
-        <div className="pd-card" aria-label="Translator loading state" data-testid="Translator loading state">
-          <p className="pd-result-text">Translating selected text...</p>
-          <button
-            type="button"
-            className="pd-button"
-            aria-label="Cancel translation"
-            data-testid="Cancel translation"
-            onClick={onCancel}
-          >
-            Cancel
-          </button>
-        </div>
+        <>
+          {state.context && (
+            <div className="pd-card" aria-label="Original selected text" data-testid="Original selected text">
+              <strong>Original</strong>
+              <p className="pd-result-text">{state.context.selectedText}</p>
+            </div>
+          )}
+          <div className="pd-card" aria-label="Translator loading state" data-testid="Translator loading state">
+            <p className="pd-result-text">Translating selected text...</p>
+            <button
+              type="button"
+              className="pd-button"
+              aria-label="Cancel translation"
+              data-testid="Cancel translation"
+              onClick={onCancel}
+            >
+              Cancel
+            </button>
+          </div>
+        </>
       )}
 
       {state.status === 'error' && (
@@ -125,28 +132,6 @@ export function TranslatorPanel({
 
       {state.status === 'success' && (
         <>
-          {state.refreshError && (
-            <div
-              className="pd-card"
-              aria-label="Translator refresh error"
-              data-testid="Translator refresh error"
-            >
-              <strong className="pd-error">{state.refreshError.code}</strong>
-              <p className="pd-result-text">{state.refreshError.message}</p>
-              {state.refreshError.retryable && (
-                <button
-                  type="button"
-                  className="pd-button"
-                  aria-label="Retry translation"
-                  data-testid="Retry translation"
-                  onClick={onRetry}
-                >
-                  Retry
-                </button>
-              )}
-            </div>
-          )}
-
           {state.warning && (
             <div className="pd-card pd-warning" aria-label="Sentence warning" data-testid="Sentence warning">
               {state.warning}

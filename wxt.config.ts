@@ -6,7 +6,7 @@ export default defineConfig({
   entrypointsDir: '../entrypoints',
   modules: ['@wxt-dev/module-react'],
   vite: () => ({
-    envPrefix: ['VITE_', 'WXT_', 'DEEPSEEK_'],
+    envPrefix: ['VITE_', 'WXT_', 'DEEPSEEK_', 'WORD_'],
   }),
   alias: {
     '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -18,7 +18,7 @@ export default defineConfig({
     name: 'PixelDock AI',
     description: 'A pixel-style floating AI dock for translation, vocabulary, and social writing.',
     permissions: ['storage', 'contextMenus', 'activeTab', 'scripting'],
-    host_permissions: ['https://api.deepseek.com/*'],
+    host_permissions: ['https://api.deepseek.com/*', 'https://open.bigmodel.cn/*'],
     action: {
       default_title: 'PixelDock AI',
     },

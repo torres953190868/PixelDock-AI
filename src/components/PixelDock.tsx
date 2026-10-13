@@ -4,11 +4,11 @@ import { TranslatorPanel, type TranslatorPanelState } from '@/components/Transla
 import { VocabPanel } from '@/components/VocabPanel';
 import { WriterPanel } from '@/components/WriterPanel';
 import type {
+  LLMTranslationResponse,
   LLMWriterResponse,
   PixelDockError,
   PixelDockPanel,
   SelectionContext,
-  TranslationFlowResult,
   WriterPlatform,
 } from '@/types';
 
@@ -22,11 +22,11 @@ export interface PixelDockHandle {
 }
 
 interface PixelDockProps {
-  translateSelection: (
+  prepareSelection: (
     source: SelectionContext['source'],
     fallbackText?: string,
-    requestId?: string,
-  ) => Promise<TranslationFlowResult>;
+  ) => { context: SelectionContext; warning?: string };
+  translateContext: (context: SelectionContext, requestId?: string) => Promise<LLMTranslationResponse>;
   generateWriter: (platform: WriterPlatform, idea: string) => Promise<LLMWriterResponse>;
   cancelTranslation: (requestId: string) => void;
 }
@@ -124,16 +124,8 @@ function toPixelDockError(err: unknown): PixelDockError {
   };
 }
 
-function clearTranslatorRefreshError(
-  state: Extract<TranslatorPanelState, { status: 'success' }>,
-): Extract<TranslatorPanelState, { status: 'success' }> {
-  const nextState = { ...state };
-  delete nextState.refreshError;
-  return nextState;
-}
-
 export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function PixelDock(
-  { translateSelection, generateWriter, cancelTranslation },
+  { prepareSelection, translateContext, generateWriter, cancelTranslation },
   ref,
 ) {
   const [visible, setVisible] = useState(false);
@@ -176,33 +168,32 @@ export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function Pi
     setVisible(true);
     setCollapsed(false);
     setPanel('translator');
-    setTranslatorState((current) => {
-      const nextState =
-        current.status === 'success' ? clearTranslatorRefreshError(current) : { status: 'loading' as const };
-      return nextState;
-    });
+
+    let prepared: { context: SelectionContext; warning?: string };
     try {
-      const flow = await translateSelection(source, fallbackText, backgroundRequestId);
+      prepared = prepareSelection(source, fallbackText);
+    } catch (err) {
+      activeRequestIdRef.current = null;
+      setTranslatorState({ status: 'error', error: toPixelDockError(err) });
+      return;
+    }
+
+    setTranslatorState({ status: 'loading', context: prepared.context });
+    try {
+      const result = await translateContext(prepared.context, backgroundRequestId);
       if (translationRequestIdRef.current !== requestId) return;
       activeRequestIdRef.current = null;
       const nextState: TranslatorPanelState = {
         status: 'success',
-        context: flow.context,
-        result: flow.result,
-        warning: flow.warning,
+        context: prepared.context,
+        result,
+        warning: prepared.warning,
       };
       setTranslatorState(nextState);
     } catch (err) {
       if (translationRequestIdRef.current !== requestId) return;
       activeRequestIdRef.current = null;
-      const error = toPixelDockError(err);
-      setTranslatorState((current) => {
-        const nextState: TranslatorPanelState =
-          current.status === 'success'
-            ? { ...clearTranslatorRefreshError(current), refreshError: error }
-            : { status: 'error', error };
-        return nextState;
-      });
+      setTranslatorState({ status: 'error', error: toPixelDockError(err) });
     }
   };
 

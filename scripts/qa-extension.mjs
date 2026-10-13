@@ -443,6 +443,7 @@ async function run() {
     await optionsPage.locator('[data-testid="DeepSeek API key"]').fill('qa-key');
     await optionsPage.locator('[data-testid="Model name"]').fill('deepseek-chat');
     await optionsPage.locator('[data-testid="Target language"]').fill('zh-CN');
+    await optionsPage.locator('[data-testid="Word model API key"]').fill('qa-word-key');
     await optionsPage.locator('[data-testid="Save options"]').click();
     await optionsPage.locator('[data-testid="Options notice"]').waitFor();
     report.options.saveWorks = true;

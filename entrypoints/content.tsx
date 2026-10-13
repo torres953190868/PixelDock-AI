@@ -12,7 +12,6 @@ import type {
   RuntimeRequest,
   RuntimeResponse,
   SelectionContext,
-  TranslationFlowResult,
   WriterPlatform,
 } from '@/types';
 
@@ -45,12 +44,17 @@ function sendRuntimeMessage<T>(request: RuntimeRequest): Promise<RuntimeResponse
   });
 }
 
-async function translateSelection(
+function prepareSelection(
   source: SelectionContext['source'],
   fallbackText = '',
+): { context: SelectionContext; warning?: string } {
+  return getSelectionContext(source, fallbackText);
+}
+
+async function translateContext(
+  context: SelectionContext,
   requestId?: string,
-): Promise<TranslationFlowResult> {
-  const { context, warning } = getSelectionContext(source, fallbackText);
+): Promise<LLMTranslationResponse> {
   const response = await sendRuntimeMessage<LLMTranslationResponse>({
     type: 'PIXELDOCK_TRANSLATE',
     payload: {
@@ -63,7 +67,7 @@ async function translateSelection(
   });
 
   if (!response.ok) throw response.error;
-  return { context, result: response.data, warning };
+  return response.data;
 }
 
 function cancelTranslationRequest(requestId: string): void {
@@ -110,7 +114,8 @@ export default defineContentScript({
         root.render(
           <PixelDock
             ref={dockRef}
-            translateSelection={translateSelection}
+            prepareSelection={prepareSelection}
+            translateContext={translateContext}
             generateWriter={generateWriter}
             cancelTranslation={cancelTranslationRequest}
           />,

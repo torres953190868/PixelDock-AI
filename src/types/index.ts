@@ -5,6 +5,9 @@ export type PixelDockPanel = 'home' | 'translator' | 'writer' | 'vocab';
 export interface Settings {
   apiKey: string;
   model: string;
+  wordApiKey: string;
+  wordModel: string;
+  wordBaseUrl: string;
   targetLanguage: string;
   writerPrompts: Record<WriterPlatform, string>;
   updatedAt: string;
@@ -140,10 +143,4 @@ export interface ContextMenuTranslateMessage {
   payload: {
     selectedText: string;
   };
-}
-
-export interface TranslationFlowResult {
-  context: SelectionContext;
-  result: LLMTranslationResponse;
-  warning?: string;
 }
