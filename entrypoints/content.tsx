@@ -9,6 +9,7 @@ import type {
   GenerateWriterPayload,
   LLMTranslationResponse,
   LLMWriterResponse,
+  OpenReviewMessage,
   RuntimeRequest,
   RuntimeResponse,
   SelectionContext,
@@ -156,7 +157,11 @@ export default defineContentScript({
       dockRef.current?.hide();
     });
 
-    chrome.runtime.onMessage.addListener((message: ContextMenuTranslateMessage) => {
+    chrome.runtime.onMessage.addListener((message: ContextMenuTranslateMessage | OpenReviewMessage) => {
+      if (message?.type === 'PIXELDOCK_OPEN_REVIEW') {
+        dockRef.current?.openReview();
+        return;
+      }
       if (message?.type !== 'PIXELDOCK_CONTEXT_MENU_TRANSLATE') return;
       void dockRef.current?.openTranslatorFromSelection('contextMenu', message.payload.selectedText);
     });

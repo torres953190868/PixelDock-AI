@@ -258,6 +258,7 @@ async function run() {
   const report = {
     dock: {},
     translator: {},
+    review: {},
     options: {},
     diagnostics: {
       console: [],
@@ -421,6 +422,50 @@ async function run() {
       'PixelDock shell extended below the viewport after rendering long content.',
     );
     report.dock.vocabularyScroll = vocabularyScroll;
+
+    await setExtensionStorage(worker, {
+      'pixeldock.reviewStates': {
+        vocab_scroll_fixture_01: {
+          vocabId: 'vocab_scroll_fixture_01',
+          stage: 0,
+          nextReviewAt: new Date(Date.now() - 60_000).toISOString(),
+          lastReviewedAt: null,
+          correctCount: 0,
+          incorrectCount: 0,
+          status: 'active',
+        },
+      },
+    });
+    await clickShadow(page, 'Review');
+    await page.waitForFunction(() => {
+      const host = Array.from(document.querySelectorAll('*')).find((element) =>
+        element.shadowRoot?.querySelector('[data-testid="Review card"]'),
+      );
+      return host?.shadowRoot
+        ?.querySelector('[data-testid="Review word"]')
+        ?.textContent?.includes('scroll fixture 01');
+    });
+    report.review.dueCardShown = true;
+
+    await clickShadow(page, 'Show review answer');
+    await page.waitForFunction(() => {
+      const host = Array.from(document.querySelectorAll('*')).find((element) =>
+        element.shadowRoot?.querySelector('[data-testid="Review answer"]'),
+      );
+      return host?.shadowRoot
+        ?.querySelector('[data-testid="Review answer"]')
+        ?.textContent?.includes('滚动验证 01');
+    });
+    report.review.answerRevealWorks = true;
+
+    await clickShadow(page, 'Remembered review');
+    await page.waitForFunction(() => {
+      const host = Array.from(document.querySelectorAll('*')).find((element) =>
+        element.shadowRoot?.querySelector('[data-testid="Review summary"]'),
+      );
+      return host?.shadowRoot?.textContent?.includes('Review session complete.');
+    });
+    report.review.answerPersists = true;
 
     report.translator.localApiKeyFallbackConfigured = hasLocalDeepSeekKeyFallback();
     if (report.translator.localApiKeyFallbackConfigured) {

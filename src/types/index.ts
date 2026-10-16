@@ -1,6 +1,6 @@
 export type WriterPlatform = 'x' | 'xiaohongshu' | 'reddit';
 
-export type PixelDockPanel = 'home' | 'translator' | 'writer' | 'vocab';
+export type PixelDockPanel = 'home' | 'translator' | 'writer' | 'vocab' | 'review';
 
 export interface Settings {
   apiKey: string;
@@ -84,6 +84,18 @@ export interface WriterDraft {
   createdAt: string;
 }
 
+export type ReviewStatus = 'active' | 'mastered';
+
+export interface ReviewState {
+  vocabId: string;
+  stage: number;
+  nextReviewAt: string | null;
+  lastReviewedAt: string | null;
+  correctCount: number;
+  incorrectCount: number;
+  status: ReviewStatus;
+}
+
 export interface SelectionContext {
   selectedText: string;
   sentence: string;
@@ -143,4 +155,8 @@ export interface ContextMenuTranslateMessage {
   payload: {
     selectedText: string;
   };
+}
+
+export interface OpenReviewMessage {
+  type: 'PIXELDOCK_OPEN_REVIEW';
 }

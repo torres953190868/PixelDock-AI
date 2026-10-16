@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { TranslatorPanel, type TranslatorPanelState } from '@/components/TranslatorPanel';
+import { ReviewPanel } from '@/components/ReviewPanel';
 import { VocabPanel } from '@/components/VocabPanel';
 import { WriterPanel } from '@/components/WriterPanel';
 import type {
@@ -15,6 +16,7 @@ import type {
 export interface PixelDockHandle {
   hide: () => void;
   showHome: () => void;
+  openReview: () => void;
   openTranslatorFromSelection: (
     source: SelectionContext['source'],
     fallbackText?: string,
@@ -216,6 +218,12 @@ export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function Pi
     setPanel('home');
   };
 
+  const openReview = () => {
+    setVisible(true);
+    setCollapsed(false);
+    setPanel('review');
+  };
+
   const hide = () => {
     setVisible(false);
   };
@@ -223,6 +231,7 @@ export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function Pi
   useImperativeHandle(ref, () => ({
     hide,
     showHome,
+    openReview,
     openTranslatorFromSelection,
   }));
 
@@ -425,6 +434,7 @@ export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function Pi
             )}
             {panel === 'writer' && <WriterPanel onGenerateWriter={generateWriter} />}
             {panel === 'vocab' && <VocabPanel />}
+            {panel === 'review' && <ReviewPanel />}
           </main>
 
           <nav className="pd-footer" aria-label="PixelDock navigation" data-testid="PixelDock navigation">
@@ -439,6 +449,15 @@ export const PixelDock = forwardRef<PixelDockHandle, PixelDockProps>(function Pi
               onClick={() => openPanel('vocab')}
             >
               Vocabulary
+            </button>
+            <button
+              type="button"
+              className="pd-button"
+              aria-label="Review"
+              data-testid="Review"
+              onClick={() => openPanel('review')}
+            >
+              Review
             </button>
           </nav>
 

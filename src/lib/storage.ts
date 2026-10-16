@@ -1,10 +1,12 @@
 import { defaultWriterPrompts, legacyDefaultWriterPrompts } from '@/lib/prompts';
-import type { Settings, VocabItem, WriterDraft, WriterPlatform } from '@/types';
+import { createReviewState, getEarliestReviewAt, isReviewDue } from '@/lib/review';
+import type { ReviewState, Settings, VocabItem, WriterDraft, WriterPlatform } from '@/types';
 
 const STORAGE_KEYS = {
   settings: 'pixeldock.settings',
   vocab: 'pixeldock.vocab',
   writerDrafts: 'pixeldock.writerDrafts',
+  reviewStates: 'pixeldock.reviewStates',
 } as const;
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -147,13 +149,22 @@ export async function addVocabItem(
     tags: input.tags ?? [],
   };
 
-  await storageSet({ [STORAGE_KEYS.vocab]: [item, ...items] });
+  const reviewStates = await getReviewStateMap();
+  await storageSet({
+    [STORAGE_KEYS.vocab]: [item, ...items],
+    [STORAGE_KEYS.reviewStates]: { ...reviewStates, [item.id]: createReviewState(item.id) },
+  });
   return { ok: true, item, duplicate: false };
 }
 
 export async function deleteVocabItem(id: string): Promise<void> {
   const items = await listVocabItems();
-  await storageSet({ [STORAGE_KEYS.vocab]: items.filter((item) => item.id !== id) });
+  const reviewStates = await getReviewStateMap();
+  delete reviewStates[id];
+  await storageSet({
+    [STORAGE_KEYS.vocab]: items.filter((item) => item.id !== id),
+    [STORAGE_KEYS.reviewStates]: reviewStates,
+  });
 }
 
 export async function searchVocabItems(query: string): Promise<VocabItem[]> {
@@ -175,6 +186,52 @@ export async function searchVocabItems(query: string): Promise<VocabItem[]> {
       .toLowerCase();
     return haystack.includes(normalizedQuery);
   });
+}
+
+export async function getReviewStateMap(): Promise<Record<string, ReviewState>> {
+  return (await storageGet<Record<string, ReviewState>>(STORAGE_KEYS.reviewStates)) ?? {};
+}
+
+export async function saveReviewState(state: ReviewState): Promise<void> {
+  const reviewStates = await getReviewStateMap();
+  reviewStates[state.vocabId] = state;
+  await storageSet({ [STORAGE_KEYS.reviewStates]: reviewStates });
+}
+
+export async function ensureReviewStates(now: Date = new Date()): Promise<number> {
+  const [items, reviewStates] = await Promise.all([listVocabItems(), getReviewStateMap()]);
+  const missing = items.filter((item) => !reviewStates[item.id]);
+  if (missing.length === 0) return 0;
+
+  const nextStates = { ...reviewStates };
+  for (const item of missing) {
+    nextStates[item.id] = createReviewState(item.id, now);
+  }
+  await storageSet({ [STORAGE_KEYS.reviewStates]: nextStates });
+  return missing.length;
+}
+
+export interface DueReviewItem {
+  item: VocabItem;
+  review: ReviewState;
+}
+
+export async function listDueReviews(now: number = Date.now()): Promise<DueReviewItem[]> {
+  const [items, reviewStates] = await Promise.all([listVocabItems(), getReviewStateMap()]);
+  const itemsById = new Map(items.map((item) => [item.id, item]));
+  const due: DueReviewItem[] = [];
+
+  for (const review of Object.values(reviewStates)) {
+    if (!isReviewDue(review, now)) continue;
+    const item = itemsById.get(review.vocabId);
+    if (item) due.push({ item, review });
+  }
+
+  return due.sort((a, b) => (a.review.nextReviewAt ?? '').localeCompare(b.review.nextReviewAt ?? ''));
+}
+
+export async function getNextReviewAt(): Promise<string | null> {
+  return getEarliestReviewAt(Object.values(await getReviewStateMap()));
 }
 
 function csvCell(value: unknown): string {
@@ -226,12 +283,13 @@ export async function listWriterDrafts(): Promise<WriterDraft[]> {
 }
 
 export async function exportAllData(): Promise<string> {
-  const [settings, vocabItems, writerDrafts] = await Promise.all([
+  const [settings, vocabItems, writerDrafts, reviewStates] = await Promise.all([
     getSettings(),
     listVocabItems(),
     listWriterDrafts(),
+    getReviewStateMap(),
   ]);
-  return JSON.stringify({ settings, vocabItems, writerDrafts }, null, 2);
+  return JSON.stringify({ settings, vocabItems, writerDrafts, reviewStates }, null, 2);
 }
 
 export async function clearLocalData(): Promise<void> {

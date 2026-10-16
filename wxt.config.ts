@@ -17,8 +17,11 @@ export default defineConfig({
   manifest: {
     name: 'PixelDock AI',
     description: 'A pixel-style floating AI dock for translation, vocabulary, and social writing.',
-    permissions: ['storage', 'contextMenus', 'activeTab', 'scripting'],
+    permissions: ['storage', 'contextMenus', 'activeTab', 'scripting', 'alarms', 'notifications'],
     host_permissions: ['https://api.deepseek.com/*', 'https://open.bigmodel.cn/*'],
+    icons: {
+      128: '/icons/128.png',
+    },
     action: {
       default_title: 'PixelDock AI',
     },

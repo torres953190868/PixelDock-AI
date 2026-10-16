@@ -314,6 +314,12 @@
   margin-top: 2px;
 }
 
+.pd-review-word {
+  font-size: 18px;
+  font-weight: 800;
+  word-break: break-word;
+}
+
 .pd-term-list,
 .pd-list {
   display: grid;

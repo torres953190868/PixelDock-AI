@@ -15,17 +15,19 @@ The extension injects a pixel-style floating AI dock into webpages. The main use
 
 - Translate selected webpage text into Chinese.
 - Save single words or short phrases into a local vocabulary book.
+- Review saved words on an Ebbinghaus forgetting-curve schedule, with system notification reminders.
 - Generate social writing drafts for X, Xiaohongshu, and Reddit.
 - Configure DeepSeek API settings from the options page.
 
 Current extension architecture:
 
 - `entrypoints/content.tsx`: injects the Shadow DOM UI, listens for double Ctrl, reads webpage selection, and sends runtime messages.
-- `entrypoints/background.ts`: owns context menu setup and routes runtime messages to LLM logic.
+- `entrypoints/background.ts`: owns context menu setup, routes runtime messages to LLM logic, and schedules Ebbinghaus review reminders via `chrome.alarms` + `chrome.notifications`.
 - `entrypoints/options/*`: renders the extension options page.
 - `src/components/*`: React UI panels and options form.
 - `src/lib/selection.ts`: deterministic selection and sentence-context extraction.
-- `src/lib/storage.ts`: `chrome.storage.local` settings, vocabulary, draft persistence, and export helpers.
+- `src/lib/storage.ts`: `chrome.storage.local` settings, vocabulary, review states, draft persistence, and export helpers.
+- `src/lib/review.ts`: deterministic Ebbinghaus review scheduling (interval ladder, due checks, remembered/forgotten transitions). Review state lives in `pixeldock.reviewStates`, keyed by vocabulary id.
 - `src/lib/llm.ts`: OpenAI-compatible chat calls, JSON parsing, and Zod schema validation. Routes by task: sentences and writer drafts use DeepSeek; single words and short phrases use the optional word model (settings fields `wordApiKey`/`wordModel`/`wordBaseUrl` or `WXT_WORD_API_KEY`/`WXT_WORD_MODEL`/`WXT_WORD_BASE_URL` env vars), falling back to DeepSeek when no word key is configured.
 - `src/lib/prompts.ts`: translator, word explanation, and writer prompt templates.
 - `src/types/index.ts`: shared runtime, storage, LLM, and UI types.
@@ -70,7 +72,7 @@ Minimum verification:
 - Background service worker should own API calls and browser-extension integration such as context menus.
 - Use `chrome.runtime.sendMessage` for content-to-background communication.
 - Use `chrome.storage.local` for settings, vocabulary, and writer drafts.
-- Avoid adding permissions unless a feature requires them. Current manifest permissions are `storage`, `contextMenus`, `activeTab`, and `scripting`; host permissions are limited to DeepSeek (`api.deepseek.com`) and the default word-model provider BigModel (`open.bigmodel.cn`). A word-model base URL on another host also needs a matching host permission in `wxt.config.ts`.
+- Avoid adding permissions unless a feature requires them. Current manifest permissions are `storage`, `contextMenus`, `activeTab`, `scripting`, plus `alarms` and `notifications` for review reminders; host permissions are limited to DeepSeek (`api.deepseek.com`) and the default word-model provider BigModel (`open.bigmodel.cn`). A word-model base URL on another host also needs a matching host permission in `wxt.config.ts`.
 - Do not assume access to data outside normal browser extension capabilities.
 
 ## UI Conventions
@@ -81,7 +83,7 @@ Minimum verification:
 - Add stable `data-testid` values to important regions and buttons.
 - Do not make tests or debugging depend on `nth-of-type`.
 - Name test IDs by the user-visible feature, for example `Conversation history`, `User profile`, or `Message composer`.
-- Preserve the existing PixelDock naming style, such as `PixelDock shell`, `Translator panel`, `Writer panel`, `Vocabulary panel`, and `Save options`.
+- Preserve the existing PixelDock naming style, such as `PixelDock shell`, `Translator panel`, `Writer panel`, `Vocabulary panel`, `Review panel`, and `Save options`.
 - Keep text readable in compact panels. Do not allow button or card text to overflow.
 - Keep the existing pixel style: square edges, hard borders, monospace type, compact layout, and high z-index injected dock.
 
@@ -91,6 +93,7 @@ Minimum verification:
 - `TranslatorPanel.tsx` renders translation state, copy actions, key terms, and vocabulary saving.
 - `WriterPanel.tsx` owns platform selection, idea input, draft generation UI, copy actions, and draft persistence trigger.
 - `VocabPanel.tsx` loads, searches, deletes, and exports vocabulary items.
+- `ReviewPanel.tsx` runs the flashcard review queue for due words, records remembered/forgotten results, and shows the next scheduled review time.
 - `OptionsForm.tsx` edits settings, custom writer prompts, data export, and local data clearing.
 
 When adding behavior, place it in the narrowest module that owns that concern. Avoid letting UI components directly absorb background routing, storage implementation details, or LLM parsing if a `src/lib/*` module is the better owner.
