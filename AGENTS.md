@@ -119,3 +119,9 @@ When adding behavior, place it in the narrowest module that owns that concern. A
 - `README.md` is currently absent.
 - `NeedsDoc.md` appears to contain product requirements, but console rendering may show mojibake depending on encoding. Treat it carefully and avoid rewriting it unless encoding is deliberately handled.
 - No file currently exceeds 400 lines based on the project scan, excluding dependencies and generated output.
+
+## Cursor Cloud specific instructions
+
+- `npm run compile` type-checks. `npm run build` writes the Chrome MV3 extension to `.output/chrome-mv3`.
+- `node scripts/qa-extension.mjs` expects Playwright's Chromium (`npx playwright install chromium`) or a Chrome/Edge path the script already checks. System Chrome on this image is `/usr/local/bin/google-chrome`, which the script does not probe. A missing DeepSeek API key is the expected local path.
+- Do not put a real API key in the repository. Word-model and DeepSeek keys stay in extension settings or env vars.
